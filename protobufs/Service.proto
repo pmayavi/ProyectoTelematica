@@ -10,7 +10,7 @@ message str{
 }
 
 message int{
-    int32 num = 2;
+    int32 num = 1;
 }
 
 message ResponseString{
