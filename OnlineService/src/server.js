@@ -21,7 +21,7 @@ const packageDefinition = protoLoader.loadSync(
 console.info("Consumer service is started...");
 
 function sendInt(sender, client, n) {
-  sender.SendInt({ number: n }, (err, data) => {
+  sender.SendInt({ num: n }, (err, data) => {
     if (err) {
       console.log(err);
     } else {
