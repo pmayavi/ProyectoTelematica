@@ -2,14 +2,14 @@ syntax = "proto3";
 
 service MicroService{
     rpc SendString(str) returns (ResponseInt) {}
-    rpc SendInt(int) returns (ResponseString) {}
+    rpc SendInt(number) returns (ResponseString) {}
 }
 
 message str{
     string item = 1;
 }
 
-message int{
+message number{
     int32 num = 1;
 }
 
