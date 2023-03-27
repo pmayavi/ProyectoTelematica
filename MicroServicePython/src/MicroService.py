@@ -1,6 +1,7 @@
 
 from concurrent import futures
 from time import sleep
+from random import uniform
 
 import json
 import grpc
@@ -18,7 +19,7 @@ class MicroService(Service_pb2_grpc.MicroServiceServicer):
         file = open("log.txt", "a")
         file.write(item)
         file.close()
-        sleep(1)
+        sleep(uniform(0.1, 5))
         return Service_pb2.ResponseInt(status=1, response=2)
 
     def SendInt(self, response, context):
@@ -28,7 +29,7 @@ class MicroService(Service_pb2_grpc.MicroServiceServicer):
         file = open("log.txt", "a")
         file.write(str(num))
         file.close()
-        sleep(1)
+        sleep(uniform(0.1, 5))
         return Service_pb2.ResponseString(status=1, response="Hola ")
 
 
