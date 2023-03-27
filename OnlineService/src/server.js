@@ -49,6 +49,7 @@ function main() {
   const mc2 = new microService(REMOTE_HOST2, grpc.credentials.createInsecure());
   sendInt(mc1, mc2, 2);
   console.log("Bien");
+  sendString(mc1, mc2, "Bien ");
 };
 
 main();
