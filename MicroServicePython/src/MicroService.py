@@ -16,7 +16,7 @@ class MicroService(Service_pb2_grpc.MicroServiceServicer):
         print("Request is received: " + item)
         file.write(item)
         file.close()
-        return Service_pb2.TransactionResponse(status=1, inventory=2)
+        return Service_pb2.ResponseInt(status=1, response=2)
 
     def SendInt(self, response, context):
         file = open("log.txt", "a")
@@ -24,7 +24,7 @@ class MicroService(Service_pb2_grpc.MicroServiceServicer):
         print("Request is received: " + str(num))
         file.write(str(num))
         file.close()
-        return Service_pb2.TransactionResponse(status=1, inventory="Hola ")
+        return Service_pb2.ResponseString(status=1, response="Hola ")
 
 
 def serve():
