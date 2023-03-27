@@ -26,7 +26,7 @@ function sendInt(sender, client, n) {
       console.log(err);
     } else {
       console.log('Recived String:', data); // API response
-      sendString(client, sender, data.response);
+      sendString(client, sender, data["response"]);
     }
   });
 }
@@ -37,7 +37,7 @@ function sendString(sender, client, s) {
       console.log(err);
     } else {
       console.log('Recived Int:', data); // API response
-      sendInt(client, sender, data.response);
+      sendInt(client, sender, data["response"]);
     }
   });
 }
