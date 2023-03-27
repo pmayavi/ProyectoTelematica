@@ -8,4 +8,4 @@ sudo node server.js
 
 sudo nano .env
 [Ip publica: 3.239.216.124]
-sudo node server.js
+sudo git pull && sudo node server.js
