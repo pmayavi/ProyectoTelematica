@@ -25,7 +25,7 @@ function sendInt(sender, client, n) {
     if (err) {
       console.log("MicroServicio desconectado, reintentando conexion en 5s");
       setTimeout(function () {
-        sendInt(sender, client, s)
+        sendInt(sender, client, n)
       }, 5000);
     } else {
       console.log('Recived String:', data["response"]); // API response
