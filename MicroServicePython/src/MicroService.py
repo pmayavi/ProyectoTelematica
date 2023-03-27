@@ -11,6 +11,7 @@ HOST = '[::]:8080'
 
 class MicroService(Service_pb2_grpc.MicroServiceServicer):
     def SendString(self, response, context):
+        print(response)
         item = response.item
         print("Request is received: " + item)
         file = open("log.txt", "a")
