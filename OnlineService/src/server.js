@@ -23,7 +23,8 @@ console.info("Consumer service is started...");
 function sendInt(sender, client, n) {
   sender.SendInt({ num: n }, (err, data) => {
     if (err) {
-      console.log(err);
+      console.log("MicroServicio desconectado, reintentando conexion en 5s");
+      setTimeout(sendInt(sender, client, s), 5000);
     } else {
       console.log('Recived String:', data["response"]); // API response
       sendString(client, sender, data["response"]);
@@ -34,7 +35,8 @@ function sendInt(sender, client, n) {
 function sendString(sender, client, s) {
   sender.SendString({ item: s }, (err, data) => {
     if (err) {
-      console.log(err);
+      console.log("MicroServicio desconectado, reintentando conexion en 5s");
+      setTimeout(sendString(sender, client, s), 5000);
     } else {
       console.log('Recived Int:', data["response"]); // API response
       sendInt(client, sender, data["response"]);
