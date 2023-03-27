@@ -1,0 +1,12 @@
+sudo apt update && sudo apt upgrade -y && sudo apt-get install python3 && sudo apt-get install python3-pip -y
+
+sudo python3 -m pip install grpcio
+sudo python3 -m pip install grpcio-tools
+sudo git clone https://github.com/pmayavi/TopicosTelematica-2023-1.git
+cd ProyectoTelematica/MicroServicePython/src/
+sudo python3 -m grpc_tools.protoc -I ../../protobufs --python_out=. --pyi_out=. --grpc_python_out=. ../../protobufs/Service.proto
+sudo python3 MicroService.py
+
+sudo git pull && \
+sudo python3 -m grpc_tools.protoc -I ../../protobufs --python_out=. --pyi_out=. --grpc_python_out=. ../../protobufs/Service.proto && \
+sudo python3 MicroService.py

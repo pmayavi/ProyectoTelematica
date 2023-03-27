@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+service MicroService{
+    rpc SendString(str) returns (ResponseInt) {}
+    rpc SendInt(int) returns (ResponseString) {}
+}
+
+message str{
+    string item = 1;
+}
+
+message int{
+    int32 num = 2;
+}
+
+message ResponseString{
+    bool status = 1;
+    string response = 2;
+}
+
+message ResponseInt{
+    bool status = 1;
+    int32 response = 2;
+}
