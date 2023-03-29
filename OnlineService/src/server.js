@@ -26,20 +26,35 @@ const server = new grpc.Server();
 
 server.addService(proto.MOM.service, {
   GetRequest: (call, callback) => {
+    console.log("New conection");
     const user = call.request.user;
     const pass = call.request.pass;
-    const mc1 = CurrentHosts[call.request.mc1];
-    const mc2 = CurrentHosts[call.request.mc2];
+    const mc1 = call.request.mc1;
+    console.log(mc1);
+    console.log(mc1 <= 0 || mc1 >= maxHosts);
+    if (mc1 <= 0 || mc1 >= maxHosts) {
+      callback(null, { status: false, response: "Invalid number for mc1" });
+      return;
+    }
+    const MC1 = CurrentHosts[mc1];
+    const mc2 = call.request.mc2;
+    console.log(mc2);
+    console.log(mc2 <= 0 || mc2 >= maxHosts);
+    if (mc2 <= 0 || mc2 >= maxHosts) {
+      callback(null, { status: false, response: "Invalid number for mc2" });
+      return;
+    }
+    const MC2 = CurrentHosts[mc2];
     const method = call.request.method;
 
     if (user in USERS && USERS[user] === pass) {
       if (method === "sendString") {
         console.log(method);
-        sendString(mc1, mc2, method);
+        sendString(MC1, MC2, method);
         callback(null, { status: true, response: method });
       } else if (method === "sendInt") {
         console.log(method);
-        sendInt(mc1, mc2, 1);
+        sendInt(MC1, MC2, 1);
         callback(null, { status: true, response: method });
       } else
         callback(null, { status: false, response: "Method doesn't exist" });
