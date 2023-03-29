@@ -5,6 +5,10 @@ service MicroService{
     rpc SendInt(number) returns (ResponseString) {}
 }
 
+service MOM{
+    rpc GetRequest(str) returns (ResponseString) {}
+}
+
 message str{
     string item = 1;
 }

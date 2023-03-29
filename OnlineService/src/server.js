@@ -19,6 +19,23 @@ const packageDefinition = protoLoader.loadSync(
   });
 
 console.info("Consumer service is started...");
+const proto = grpc.loadPackageDefinition(packageDefinition);
+const server = new grpc.Server();
+
+server.addService(proto.MOM.service, {
+  GetRequest: (_, callback) => {
+    callback(null, { status: true, response: "YEah" });
+  },
+});
+
+server.bindAsync(
+  "127.0.0.1:8080",
+  grpc.ServerCredentials.createInsecure(),
+  (error, port) => {
+    console.log("Server running at 127.0.0.1:8080");
+    server.start();
+  }
+);
 
 function sendInt(sender, client, n) {
   sender.SendInt({ num: n }, (err, data) => {
