@@ -1,0 +1,7 @@
+{
+    "user": "pmayav",
+    "pass": "1234",
+    "mc1": 1,
+    "mc2": 2,
+    "method": "sendString"
+}

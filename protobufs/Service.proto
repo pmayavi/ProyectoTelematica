@@ -6,7 +6,15 @@ service MicroService{
 }
 
 service MOM{
-    rpc GetRequest(str) returns (ResponseString) {}
+    rpc GetRequest(Request) returns (ResponseString) {}
+}
+
+message Request{
+    string user = 1;
+    string pass = 2;
+    int32 mc1 = 3;
+    int32 mc2 = 4;
+    string method = 5;
 }
 
 message str{

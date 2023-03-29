@@ -5,8 +5,10 @@ import protoLoader from '@grpc/proto-loader';
 dotenv.config()
 
 const PROTO_PATH = process.env.PROTO_PATH;
-const REMOTE_HOST1 = process.env.REMOTE_HOST1;
-const REMOTE_HOST2 = process.env.REMOTE_HOST2;
+const HOSTS = process.env.HOSTS.split(',');
+const USERS = JSON.parse(process.env.USERS);
+const maxHosts = HOSTS.length + 1;
+const CurrentHosts = new Array(maxHosts);
 
 const packageDefinition = protoLoader.loadSync(
   PROTO_PATH,
@@ -23,8 +25,27 @@ const proto = grpc.loadPackageDefinition(packageDefinition);
 const server = new grpc.Server();
 
 server.addService(proto.MOM.service, {
-  GetRequest: (_, callback) => {
-    callback(null, { status: true, response: "YEah" });
+  GetRequest: (call, callback) => {
+    const user = call.request.user;
+    const pass = call.request.pass;
+    const mc1 = CurrentHosts[call.request.mc1];
+    const mc2 = CurrentHosts[call.request.mc2];
+    const method = call.request.method;
+
+    if (user in USERS && USERS[user] === pass) {
+      if (method === "sendString") {
+        console.log(method);
+        sendString(mc1, mc2, method);
+        callback(null, { status: true, response: method });
+      } else if (method === "sendInt") {
+        console.log(method);
+        sendInt(mc1, mc2, 1);
+        callback(null, { status: true, response: method });
+      } else
+        callback(null, { status: false, response: "Method doesn't exist" });
+    }
+    else
+      callback(null, { status: false, response: "Wrong user or password" });
   },
 });
 
@@ -68,11 +89,15 @@ function sendString(sender, client, s) {
 const microService = grpc.loadPackageDefinition(packageDefinition).MicroService;
 
 function main() {
-  const mc1 = new microService(REMOTE_HOST1, grpc.credentials.createInsecure());
-  const mc2 = new microService(REMOTE_HOST2, grpc.credentials.createInsecure());
+  console.log(HOSTS[0]);
+  console.log(HOSTS[1]);
+  const mc1 = new microService(HOSTS[0], grpc.credentials.createInsecure());
+  const mc2 = new microService(HOSTS[1], grpc.credentials.createInsecure());
+  CurrentHosts[1] = mc1;
+  CurrentHosts[2] = mc2;
   sendInt(mc1, mc2, 2);
   console.log("Bien");
-  sendString(mc1, mc2, "Bien ");
+  //sendString(mc1, mc2, "Bien ");
 };
 
 main();
