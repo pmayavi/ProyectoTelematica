@@ -104,13 +104,14 @@ function sendString(sender, client, s) {
 const microService = grpc.loadPackageDefinition(packageDefinition).MicroService;
 
 function main() {
-  console.log(HOSTS[0]);
-  console.log(HOSTS[1]);
-  const mc1 = new microService(HOSTS[0], grpc.credentials.createInsecure());
-  const mc2 = new microService(HOSTS[1], grpc.credentials.createInsecure());
-  CurrentHosts[1] = mc1;
-  CurrentHosts[2] = mc2;
-  sendInt(mc1, mc2, 2);
+  const mc = null;
+  var count = 1;
+  for (const host in HOSTS) {
+    console.log(host);
+    CurrentHosts[count] = new microService(host, grpc.credentials.createInsecure());
+    count++;
+  }
+  sendInt(CurrentHosts[1], CurrentHosts[2], 2);
   console.log("Bien");
   //sendString(mc1, mc2, "Bien ");
 };
