@@ -29,33 +29,24 @@ const server = new grpc.Server();
 server.addService(proto.MOM.service, {
   GetRequest: (call, callback) => {
     console.log("New request");
-    const user = call.request.user;
-    const pass = call.request.pass;
-    const mc1 = call.request.mc1;
-    //console.log(call);
-    if (mc1 <= 0 || mc1 >= maxHosts) {
-      callback(null, { status: false, response: "Invalid number for mc1" });
+    const [user, pass, mc1, mc2, method] = getRequestValues(call.request);
+    if (!mc1)
+      callback(null, { status: false, response: mc2 });
+    else if (!mc2)
+      callback(null, { status: false, response: mc1 });
+    if (!mc1 || !mc2)
       return;
-    }
-    const MC1 = CurrentHosts[mc1];
-    const mc2 = call.request.mc2;
-    if (mc2 <= 0 || mc2 >= maxHosts) {
-      callback(null, { status: false, response: "Invalid number for mc2" });
-      return;
-    }
-    const MC2 = CurrentHosts[mc2];
-    const method = call.request.method;
 
     if (user in USERS && USERS[user] === pass) {
       console.log(method);
       const id = v4();
       if (method === "sendString") {
         Queues[id] = [call.request, new Date().toLocaleString()];
-        sendString(MC1, MC2, method, id);
-        callback(null, { status: true, response: method });
+        sendString(mc1, mc2, method, id);
+        callback(null, { status: true, response: id });
       } else if (method === "sendInt") {
-        sendInt(MC1, MC2, 1);
-        callback(null, { status: true, response: method });
+        sendInt(mc1, mc2, 1);
+        callback(null, { status: true, response: id });
       } else
         callback(null, { status: false, response: "Method doesn't exist" });
     }
@@ -98,6 +89,22 @@ server.bindAsync(
     server.start();
   }
 );
+
+function getRequestValues(request) {
+  const user = request.user;
+  const pass = request.pass;
+  const mc1 = request.mc1;
+  //console.log(request);
+  if (mc1 <= 0 || mc1 >= maxHosts)
+    return [null, null, null, "Invalid number for mc1", null];
+  const MC1 = CurrentHosts[mc1];
+  const mc2 = request.mc2;
+  if (mc2 <= 0 || mc2 >= maxHosts)
+    return [null, null, "Invalid number for mc2", null, null];
+  const MC2 = CurrentHosts[mc2];
+  const method = request.method;
+  return [user, pass, MC1, MC2, method];
+}
 
 function sendInt(sender, client, n, id) {
   sender.SendInt({ num: n }, (err, data) => {
