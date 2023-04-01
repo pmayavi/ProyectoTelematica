@@ -7,6 +7,8 @@ service MicroService{
 
 service MOM{
     rpc GetRequest(Request) returns (ResponseString) {}
+    rpc GetQueues(Que) returns (ResponseString) {}
+    rpc RemoveQueue(Queue) returns (ResponseString) {}
 }
 
 message Request{
@@ -15,6 +17,13 @@ message Request{
     int32 mc1 = 3;
     int32 mc2 = 4;
     string method = 5;
+}
+
+message Que{}
+message Queue{
+    string user = 1;
+    string pass = 2;
+    string id = 3;
 }
 
 message str{
