@@ -2,11 +2,11 @@ sudo apt update && sudo apt upgrade -y
 
 sudo curl -fsSL https://deb.nodesource.com/setup_19.x | sudo -E bash - && sudo apt-get install -y nodejs
 
-sudo npm install uuidv4
 sudo git clone https://github.com/pmayavi/ProyectoTelematica.git
 cd ProyectoTelematica/OnlineService/src/
 sudo node server.js
 
+sudo npm install uuidv4
 sudo nano .env
 [Ip publica: 3.239.216.124]
 sudo git pull && sudo node server.js

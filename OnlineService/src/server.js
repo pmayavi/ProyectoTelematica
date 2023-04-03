@@ -51,7 +51,7 @@ server.addService(proto.MOMService.service, {
           let newCharCode = charCode + 13;
           let newChar = String.fromCharCode(newCharCode);
           result += newChar;
-      }
+        }
         sendString(mc1, mc2, result, id);
         callback(null, { status: true, response: id });
       } else if (method === "sendInt") {
@@ -97,10 +97,10 @@ server.addService(proto.MOMService.service, {
 });
 
 server.bindAsync(
-  "127.0.0.1:8080",
+  "184.73.121.95:8080",
   grpc.ServerCredentials.createInsecure(),
   (error, port) => {
-    console.log("Server running at 127.0.0.1:8080");
+    console.log("Server running at 184.73.121.95:8080");
     server.start();
     checkMoms();
   }
