@@ -42,15 +42,18 @@ server.addService(proto.MOMService.service, {
     if (user in USERS && USERS[user] === pass) {
       console.log(method);
       const id = v4();
+      console.log(id);
       if (method === "sendString") {
         Queues[id] = [call.request, new Date().toLocaleString()];
         let str = method;
         let result = '';
         for (let i = str.length - 1; i >= 0; i--) {
+          console.log(i);
           let charCode = str.charCodeAt(i);
           let newCharCode = charCode + 13;
           let newChar = String.fromCharCode(newCharCode);
           result += newChar;
+          console.log(result);
         }
         sendString(mc1, mc2, result, id);
         callback(null, { status: true, response: id });
@@ -92,7 +95,7 @@ server.addService(proto.MOMService.service, {
   },
 
   CheckOnline: (_, callback) => {
-    console.log("CheckOnline");
+    //console.log("CheckOnline");
     callback(null, { status: true, response: "MOM functional" });
   },
 });
@@ -138,7 +141,8 @@ function sendString(sender, client, s, id) {
         setTimeout(function () {
           sendString(sender, client, s, id);
         }, 5000);
-      }
+      } else
+        console.log("MicroServicio desconectado.");
     } else {
       console.log('Recived Int:', data["response"]); // API response
       if (Queues[id])
@@ -183,8 +187,8 @@ async function checkMoms() {
       }
     );
   } else {
-    console.log("There's already a main MOM, checking again in 3 seconds...");
-    setTimeout(function () { checkMoms(); }, 2000);
+    console.log("There's already a main MOM, checking again in 5 seconds...");
+    setTimeout(function () { checkMoms(); }, 4000);
   }
 
 }
@@ -205,7 +209,7 @@ function main() {
   for (let i = 0; i < HOSTS.length; i++) {
     CurrentHosts[i + 1] = new microService(HOSTS[i], grpc.credentials.createInsecure());
   }
-  //sendInt(CurrentHosts[1], CurrentHosts[2], 2);
+  //sendInt(CurrentHosts[1], CurrentHosts[2], 2, "id");
   checkMoms();
 
 };

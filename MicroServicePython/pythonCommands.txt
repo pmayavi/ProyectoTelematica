@@ -7,6 +7,8 @@ cd ProyectoTelematica/MicroServicePython/src/
 sudo python3 -m grpc_tools.protoc -I ../../protobufs --python_out=. --pyi_out=. --grpc_python_out=. ../../protobufs/Service.proto
 sudo python3 MicroService.py
 
+cd ProyectoTelematica/MicroServicePython/src/
+
 sudo git pull && \
 sudo python3 -m grpc_tools.protoc -I ../../protobufs --python_out=. --pyi_out=. --grpc_python_out=. ../../protobufs/Service.proto && \
 sudo python3 MicroService.py
