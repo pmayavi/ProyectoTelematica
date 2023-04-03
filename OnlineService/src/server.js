@@ -42,10 +42,19 @@ server.addService(proto.MOM.service, {
       const id = v4();
       if (method === "sendString") {
         Queues[id] = [call.request, new Date().toLocaleString()];
-        sendString(mc1, mc2, method, id);
+        let str = method;
+        let result = '';
+        for (let i = str.length - 1; i >= 0; i--) {
+          let charCode = str.charCodeAt(i);
+          let newCharCode = charCode + 13;
+          let newChar = String.fromCharCode(newCharCode);
+          result += newChar;
+      }
+        sendString(mc1, mc2, result, id);
         callback(null, { status: true, response: id });
       } else if (method === "sendInt") {
-        sendInt(mc1, mc2, 1);
+        encoded = caesarCryptog(1); //Aca iria un input de int en vez del numero quemado si se va a hacer ese cambio
+        sendInt(mc1, mc2, encoded, id);
         callback(null, { status: true, response: id });
       } else
         callback(null, { status: false, response: "Method doesn't exist" });
@@ -107,8 +116,7 @@ function getRequestValues(request) {
 }
 
 function sendInt(sender, client, n, id) {
-  enctyptedNum = caesarCryptog(n);
-  sender.SendInt({ num: enctyptedNum }, (err, data) => {
+  sender.SendInt({ num: n }, (err, data) => {
     if (err) {
       if (Queues[id]) {
         console.log("MicroServicio desconectado, reintentando conexion en 5s");
@@ -125,15 +133,7 @@ function sendInt(sender, client, n, id) {
 }
 
 function sendString(sender, client, s, id) {
-  let str = s;
-  let result = '';
-  for (let i = str.length - 1; i >= 0; i--) {
-    let charCode = str.charCodeAt(i);
-    let newCharCode = charCode + 13;
-    let newChar = String.fromCharCode(newCharCode);
-    result += newChar;
-  }
-  sender.SendString({ item: result }, (err, data) => {
+  sender.SendString({ item: s }, (err, data) => {
     if (err) {
       if (Queues[id]) {
         console.log("MicroServicio desconectado, reintentando conexion en 5s");
