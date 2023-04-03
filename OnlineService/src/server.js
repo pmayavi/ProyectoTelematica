@@ -97,10 +97,10 @@ server.addService(proto.MOMService.service, {
 });
 
 server.bindAsync(
-  "127.0.0.1:8080",
+  "0.0.0.0:8080",
   grpc.ServerCredentials.createInsecure(),
   (error, port) => {
-    console.log("Server running at 127.0.0.1:8080");
+    console.log("Server running at 0.0.0.0:8080");
     server.start();
     checkMoms();
   }
