@@ -171,21 +171,23 @@ function caesarCryptog(unencoded) {
   return parseInt(encoded);
 }
 
-function checkMom(mom) {
-  mom.CheckOnline({}, (err, data) => {
-    if (!err) {
-      console.log("MOM!");
-    }
-  });
+async function checkMoms() {
+  console.log("checkMoms");
+  var availableMoms = 0;
+  for (let i = 0; i < MOMS.length; i++) {
+    CurrentMoms[i].CheckOnline({}, (err, data) => {
+      if (!err)
+        availableMoms += 1;
+    });
+  }
+  await wait(1000);
+  console.log('Available MOMs: ', availableMoms);
 }
 
-function checkMoms() {
-  console.log("checkMoms");
-  //var availableMoms = 0;
-  for (let i = 0; i < MOMS.length; i++) {
-    checkMom(CurrentMoms[i]);
-  }
-  //console.log('Available MOMs: ', availableMoms);
+function wait(ms) {
+  return new Promise(resolve => {
+    setTimeout(resolve, ms);
+  });
 }
 
 const microService = grpc.loadPackageDefinition(packageDefinition).MicroService;
@@ -194,23 +196,12 @@ const momService = grpc.loadPackageDefinition(packageDefinition).MOMService;
 function main() {
   for (let i = 0; i < MOMS.length; i++) {
     CurrentMoms[i] = new momService(MOMS[i], grpc.credentials.createInsecure());
-    console.log(MOMS[i]);
   }
   for (let i = 0; i < HOSTS.length; i++) {
     CurrentHosts[i + 1] = new microService(HOSTS[i], grpc.credentials.createInsecure());
-    console.log(HOSTS[i]);
   }
   //sendInt(CurrentHosts[1], CurrentHosts[2], 2);
-  console.log("Bien");
-  //sendString(mc1, mc2, "Bien ");
   checkMoms();
-
-  CurrentMoms[0].CheckOnline({}, (err, data) => {
-    if (!err) {
-      console.log("MOM funciona");
-    }
-    console.log(err, data);
-  });
 
 };
 
