@@ -124,6 +124,14 @@ function sendInt(sender, client, n, id) {
 }
 
 function sendString(sender, client, s, id) {
+  let str = s;
+  let result = '';
+  for (let i = str.length - 1; i >= 0; i--) {
+    let charCode = str.charCodeAt(i);
+    let newCharCode = charCode + 13;
+    let newChar = String.fromCharCode(newCharCode);
+    result += newChar;
+  }
   sender.SendString({ item: s }, (err, data) => {
     if (err) {
       if (Queues[id]) {
