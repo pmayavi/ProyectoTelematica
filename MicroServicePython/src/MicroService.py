@@ -24,14 +24,16 @@ class MicroService(Service_pb2_grpc.MicroServiceServicer):
         file.write(decrypted)
         file.close()
         sleep(uniform(0.1, 5))
-        return Service_pb2.ResponseInt(status=1, response=2)
+        return Service_pb2.ResponseInt(status=1, response=self.caesarCryptog(2))
 
     def SendInt(self, response, context):
         print(response)
         num += response.num
-        print("Request is received: " + self.cryptog(str(num)))
+        print("Request is received: " + num)
+        decrypted = self.caesarDecrypt(num)
+        print("\nDecrypted it's: " + decrypted)
         file = open("log.txt", "a")
-        file.write(str(num))
+        file.write(str(decrypted))
         file.close()
         sleep(uniform(0.1, 5))
         return Service_pb2.ResponseString(status=1, response=self.cryptog("Hola"))
@@ -43,6 +45,30 @@ class MicroService(Service_pb2_grpc.MicroServiceServicer):
             for v in iniText:
                 convText=iniText.replace(v, convert(v))
         return(convText)
+    
+    def caesarCryptog(self, unencoded):
+        encoded = ''
+        shift = 3
+        for char in str(unencoded):
+            if char.isdigit():
+                new_digit = (int(char) + shift) % 10
+                encoded += str(new_digit)
+            else:
+                encoded += char
+        return int(encoded)
+    
+    def caesarDecrypt(self, unencoded):
+        encoded = ''
+        shift = 3
+        for char in str(unencoded):
+            if char.isdigit():
+                new_digit = (int(char) - shift) % 10
+                encoded += str(new_digit)
+            else:
+                encoded += char
+        return int(encoded)
+
+
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     Service_pb2_grpc.add_MicroServiceServicer_to_server(

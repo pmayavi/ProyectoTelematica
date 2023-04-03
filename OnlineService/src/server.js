@@ -107,7 +107,8 @@ function getRequestValues(request) {
 }
 
 function sendInt(sender, client, n, id) {
-  sender.SendInt({ num: n }, (err, data) => {
+  enctyptedNum = caesarCryptog(n);
+  sender.SendInt({ num: enctyptedNum }, (err, data) => {
     if (err) {
       if (Queues[id]) {
         console.log("MicroServicio desconectado, reintentando conexion en 5s");
@@ -132,7 +133,7 @@ function sendString(sender, client, s, id) {
     let newChar = String.fromCharCode(newCharCode);
     result += newChar;
   }
-  sender.SendString({ item: s }, (err, data) => {
+  sender.SendString({ item: result }, (err, data) => {
     if (err) {
       if (Queues[id]) {
         console.log("MicroServicio desconectado, reintentando conexion en 5s");
@@ -146,6 +147,21 @@ function sendString(sender, client, s, id) {
         sendInt(client, sender, data["response"], id);
     }
   });
+}
+
+function caesarCryptog(unencoded) {
+  const unencodedString = unencoded.toString();
+  let encoded = '';
+  for (let i = 0; i < unencodedString.length; i++) {
+    const charCode = unencodedString.charCodeAt(i);
+    if (charCode >= 48 && charCode <= 57) {
+      const newDigit = ((charCode - 48 + shift) % 10);
+      encoded += newDigit.toString();
+    } else {
+      encoded += unencodedString[i];
+    }
+  }
+  return parseInt(encoded);
 }
 
 const microService = grpc.loadPackageDefinition(packageDefinition).MicroService;
