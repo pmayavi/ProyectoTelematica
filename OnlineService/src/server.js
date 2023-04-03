@@ -92,6 +92,7 @@ server.addService(proto.MOMService.service, {
   },
 
   CheckOnline: (_, callback) => {
+    console.log("CheckOnline");
     callback(null, { status: true, response: "MOM functional" });
   },
 });
@@ -102,7 +103,6 @@ server.bindAsync(
   (error, port) => {
     console.log("Server running at 0.0.0.0:8080");
     server.start();
-    checkMoms();
   }
 );
 
@@ -171,17 +171,21 @@ function caesarCryptog(unencoded) {
   return parseInt(encoded);
 }
 
+function checkMom(mom) {
+  mom.CheckOnline({}, (err, data) => {
+    if (!err) {
+      console.log("MOM!");
+    }
+  });
+}
+
 function checkMoms() {
   console.log("checkMoms");
-  var availableMoms = 0;
+  //var availableMoms = 0;
   for (let i = 0; i < MOMS.length; i++) {
-    CurrentMoms[i].CheckOnline({}, (err, data) => {
-      if (!err) {
-        availableMoms++;
-      }
-    });
+    checkMom(CurrentMoms[i]);
   }
-  console.log('Available MOMs: ', availableMoms);
+  //console.log('Available MOMs: ', availableMoms);
 }
 
 const microService = grpc.loadPackageDefinition(packageDefinition).MicroService;
@@ -199,6 +203,14 @@ function main() {
   //sendInt(CurrentHosts[1], CurrentHosts[2], 2);
   console.log("Bien");
   //sendString(mc1, mc2, "Bien ");
+  checkMoms();
+
+  CurrentMoms[0].CheckOnline({}, (err, data) => {
+    if (!err) {
+      console.log("MOM funciona");
+    }
+    console.log(err, data);
+  });
 
 };
 
