@@ -5,10 +5,11 @@ service MicroService{
     rpc SendInt(number) returns (ResponseString) {}
 }
 
-service MOM{
+service MOMService{
     rpc GetRequest(Request) returns (ResponseString) {}
     rpc GetQueues(Que) returns (ResponseString) {}
     rpc RemoveQueue(Queue) returns (ResponseString) {}
+    rpc CheckOnline(Que) returns (ResponseString) {}
 }
 
 message Request{

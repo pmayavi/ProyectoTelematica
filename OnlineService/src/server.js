@@ -6,8 +6,10 @@ import { v4 } from 'uuid';
 dotenv.config()
 
 const PROTO_PATH = process.env.PROTO_PATH;
+const MOMS = process.env.MOMS.split(',');
 const HOSTS = process.env.HOSTS.split(',');
 const USERS = JSON.parse(process.env.USERS);
+const CurrentMoms = new Array(MOMS.length);
 const maxHosts = HOSTS.length + 1;
 const CurrentHosts = new Array(maxHosts);
 const Queues = {};
@@ -26,7 +28,7 @@ console.info("Consumer service is started...");
 const proto = grpc.loadPackageDefinition(packageDefinition);
 const server = new grpc.Server();
 
-server.addService(proto.MOM.service, {
+server.addService(proto.MOMService.service, {
   GetRequest: (call, callback) => {
     console.log("New request");
     const [user, pass, mc1, mc2, method] = getRequestValues(call.request);
@@ -88,6 +90,10 @@ server.addService(proto.MOM.service, {
     } else
       callback(null, { status: false, response: "Queue doesn't exist" });
   },
+
+  CheckOnline: (_, callback) => {
+    callback(null, { status: true, response: "MOM functional" });
+  },
 });
 
 server.bindAsync(
@@ -96,6 +102,7 @@ server.bindAsync(
   (error, port) => {
     console.log("Server running at 127.0.0.1:8080");
     server.start();
+    checkMoms();
   }
 );
 
@@ -164,19 +171,35 @@ function caesarCryptog(unencoded) {
   return parseInt(encoded);
 }
 
+function checkMoms() {
+  console.log("checkMoms");
+  var availableMoms = 0;
+  for (let i = 0; i < MOMS.length; i++) {
+    CurrentMoms[i].CheckOnline({}, (err, data) => {
+      if (!err) {
+        availableMoms++;
+      }
+    });
+  }
+  console.log('Available MOMs: ', availableMoms);
+}
+
 const microService = grpc.loadPackageDefinition(packageDefinition).MicroService;
+const momService = grpc.loadPackageDefinition(packageDefinition).MOMService;
 
 function main() {
-  const mc = null;
-  var count = 1;
-  for (const host in HOSTS) {
-    console.log(host);
-    CurrentHosts[count] = new microService(host, grpc.credentials.createInsecure());
-    count++;
+  for (let i = 0; i < MOMS.length; i++) {
+    CurrentMoms[i] = new momService(MOMS[i], grpc.credentials.createInsecure());
+    console.log(MOMS[i]);
+  }
+  for (let i = 0; i < HOSTS.length; i++) {
+    CurrentHosts[i + 1] = new microService(HOSTS[i], grpc.credentials.createInsecure());
+    console.log(HOSTS[i]);
   }
   //sendInt(CurrentHosts[1], CurrentHosts[2], 2);
   console.log("Bien");
   //sendString(mc1, mc2, "Bien ");
+
 };
 
 main();
