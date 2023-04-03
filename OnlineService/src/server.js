@@ -97,15 +97,6 @@ server.addService(proto.MOMService.service, {
   },
 });
 
-server.bindAsync(
-  "0.0.0.0:8080",
-  grpc.ServerCredentials.createInsecure(),
-  (error, port) => {
-    console.log("Server running at 0.0.0.0:8080");
-    server.start();
-  }
-);
-
 function getRequestValues(request) {
   const user = request.user;
   const pass = request.pass;
@@ -172,7 +163,6 @@ function caesarCryptog(unencoded) {
 }
 
 async function checkMoms() {
-  console.log("checkMoms");
   var availableMoms = 0;
   for (let i = 0; i < MOMS.length; i++) {
     CurrentMoms[i].CheckOnline({}, (err, data) => {
@@ -182,6 +172,21 @@ async function checkMoms() {
   }
   await wait(1000);
   console.log('Available MOMs: ', availableMoms);
+  if (availableMoms == 0) {
+    console.log("This is the main MOM");
+    server.bindAsync(
+      "0.0.0.0:8080",
+      grpc.ServerCredentials.createInsecure(),
+      (error, port) => {
+        console.log("Server running at 0.0.0.0:8080");
+        server.start();
+      }
+    );
+  } else {
+    console.log("There's already a main MOM, checking again in 3 seconds...");
+    setTimeout(function () { checkMoms(); }, 2000);
+  }
+
 }
 
 function wait(ms) {
