@@ -7,6 +7,7 @@ dotenv.config()
 const PROTO_PATH = process.env.PROTO_PATH;
 const MOMS = process.env.MOMS.split(',');
 const CurrentMoms = new Array(MOMS.length);
+const fs = require('fs');
 var mainMom;
 
 const packageDefinition = protoLoader.loadSync(
@@ -69,7 +70,22 @@ server.addService(proto.MOMService.service, {
 
   SendQueue: (call, callback) => {
     console.log(call.request.item);
-    //print
+    JsonComponents = call.request.item.split(';');
+    objId = JSON.parse(JsonComponents[0]);
+    objBody= JSON.parse(JsonComponents[1]);
+    combine = Object.assign(objId, objBody);
+    combine = JSON.stringify(combine);
+    existingJson = JSON.parse(fs.readFileSync('cache.json'));
+    existingJson.newData=combine;
+
+    fs.writeFile('cache.json', JSON.stringify(existingJson), (err) => {
+      if (err) {
+        console.error(err);
+      } else {
+        console.log('JSON file updated');
+      }
+    });
+
   },
 });
 
