@@ -6,6 +6,7 @@ import { v4 } from 'uuid';
 dotenv.config()
 
 const PROTO_PATH = process.env.PROTO_PATH;
+const PROXY = process.env.PROXY;
 const MOMS = process.env.MOMS.split(',');
 const HOSTS = process.env.HOSTS.split(',');
 const USERS = JSON.parse(process.env.USERS);
@@ -13,6 +14,7 @@ const CurrentMoms = new Array(MOMS.length);
 const maxHosts = HOSTS.length + 1;
 const CurrentHosts = new Array(maxHosts);
 const Queues = {};
+const proxy = null;
 
 const packageDefinition = protoLoader.loadSync(
   PROTO_PATH,
@@ -42,18 +44,15 @@ server.addService(proto.MOMService.service, {
     if (user in USERS && USERS[user] === pass) {
       console.log(method);
       const id = v4();
-      console.log(id);
       if (method === "sendString") {
         Queues[id] = [call.request, new Date().toLocaleString()];
         let str = method;
         let result = '';
         for (let i = str.length - 1; i >= 0; i--) {
-          console.log(i);
           let charCode = str.charCodeAt(i);
           let newCharCode = charCode + 13;
           let newChar = String.fromCharCode(newCharCode);
           result += newChar;
-          console.log(result);
         }
         sendString(mc1, mc2, result, id);
         callback(null, { status: true, response: id });
@@ -151,6 +150,21 @@ function sendString(sender, client, s, id) {
   });
 }
 
+function sendQueue(queue, id) {
+  Proxy.SendQueue({ item: id + "," + queue[0].stringify() + "," + queue[1] }, (err, data) => {
+    if (err) {
+      console.log("Proxy desconectado, reintentando conexion en 3s");
+      setTimeout(function () {
+        sendQueue(queue, id);
+      }, 3000);
+    } else {
+      console.log('Recived Int:', data["response"]); // API response
+      if (Queues[id])
+        sendInt(client, sender, data["response"], id);
+    }
+  });
+}
+
 function caesarCryptog(unencoded) {
   const unencodedString = unencoded.toString();
   let encoded = '';
@@ -179,7 +193,7 @@ async function checkMoms() {
   if (availableMoms == 0) {
     console.log("This is the main MOM");
     server.bindAsync(
-      "0.0.0.0:8080",
+      "localhost:8080",
       grpc.ServerCredentials.createInsecure(),
       (error, port) => {
         console.log("Server running at 0.0.0.0:8080");
@@ -203,6 +217,7 @@ const microService = grpc.loadPackageDefinition(packageDefinition).MicroService;
 const momService = grpc.loadPackageDefinition(packageDefinition).MOMService;
 
 function main() {
+  proxy = momService(PROXY, grpc.credentials.createInsecure());
   for (let i = 0; i < MOMS.length; i++) {
     CurrentMoms[i] = new momService(MOMS[i], grpc.credentials.createInsecure());
   }
