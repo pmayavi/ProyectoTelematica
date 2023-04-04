@@ -61,8 +61,17 @@ server.addService(proto.MOMService.service, {
         console.log(err);
         callback(null, { status: false, response: err });
       } else {
-        console.log('Response received from remote service:', data);
-        callback(null, { status: true, response: data.response });
+        const user = call.request.user;
+        const pass = call.request.pass;
+        const id = call.request.id;
+        if (Queues[id]) {
+          if (Queues[id][0].user === user && Queues[id][0].pass === pass) {
+            delete Queues[id];
+            callback(null, { status: true, response: "Queue deleted successfully" });
+          } else
+            callback(null, { status: false, response: "Wrong user or password" });
+        } else
+          callback(null, { status: false, response: "Queue doesn't exist" }); 
       }
     });
   },
