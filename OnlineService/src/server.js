@@ -13,8 +13,8 @@ const USERS = JSON.parse(process.env.USERS);
 const CurrentMoms = new Array(MOMS.length);
 const maxHosts = HOSTS.length + 1;
 const CurrentHosts = new Array(maxHosts);
-const Queues = {};
-const proxy = null;
+var Queues = {};
+var proxy = null;
 
 const packageDefinition = protoLoader.loadSync(
   PROTO_PATH,
@@ -44,24 +44,26 @@ server.addService(proto.MOMService.service, {
     if (user in USERS && USERS[user] === pass) {
       console.log(method);
       const id = v4();
-      if (method === "sendString") {
-        Queues[id] = [call.request, new Date().toLocaleString()];
-        let str = method;
-        let result = '';
-        for (let i = str.length - 1; i >= 0; i--) {
-          let charCode = str.charCodeAt(i);
-          let newCharCode = charCode + 13;
-          let newChar = String.fromCharCode(newCharCode);
-          result += newChar;
-        }
-        sendString(mc1, mc2, result, id);
-        callback(null, { status: true, response: id });
-      } else if (method === "sendInt") {
-        encoded = caesarCryptog(1); //Aca iria un input de int en vez del numero quemado si se va a hacer ese cambio
-        sendInt(mc1, mc2, encoded, id);
-        callback(null, { status: true, response: id });
-      } else
-        callback(null, { status: false, response: "Method doesn't exist" });
+      switch (method) {
+        case "sendString":
+          call.request["time"] = new Date().toLocaleString();
+          Queues[id] = call.request;
+          sendQueue(Queues[id], id);
+          let encrypted = caesarCrypt(Q.method);
+          sendString(mc1, mc2, encrypted, id);
+          callback(null, { status: true, response: id });
+          break;
+        case "sendInt":
+          call.request["time"] = new Date().toLocaleString();
+          Queues[id] = call.request;
+          sendQueue(Queues[id], id);
+          encoded = caesarCryptog(1); //Aca iria un input de int en vez del numero quemado si se va a hacer ese cambio
+          sendInt(mc1, mc2, encoded, id);
+          callback(null, { status: true, response: id });
+          break;
+        default:
+          callback(null, { status: false, response: "Method doesn't exist" });
+      }
     }
     else
       callback(null, { status: false, response: "Wrong user or password" });
@@ -72,7 +74,7 @@ server.addService(proto.MOMService.service, {
     'use strict'; //https://stackoverflow.com/questions/34913675/how-to-iterate-keys-values-in-javascript
     var response = "";
     for (const [key, value] of Object.entries(Queues)) {
-      response += "||| " + key + " | " + value[1] + " | " + value[0].user + " | " + value[0].method + " |||";
+      response += "||| " + key + " | " + value.time + " | " + value.user + " | " + value.method + " |||";
 
     }
     callback(null, { status: true, response: response });
@@ -84,7 +86,7 @@ server.addService(proto.MOMService.service, {
     const pass = call.request.pass;
     const id = call.request.id;
     if (Queues[id]) {
-      if (Queues[id][0].user === user && Queues[id][0].pass === pass) {
+      if (Queues[id].user === user && Queues[id].pass === pass) {
         delete Queues[id];
         callback(null, { status: true, response: "Queue deleted successfully" });
       } else
@@ -96,6 +98,28 @@ server.addService(proto.MOMService.service, {
   CheckOnline: (_, callback) => {
     //console.log("CheckOnline");
     callback(null, { status: true, response: "MOM functional" });
+  },
+
+  SendQueue: (call, callback) => {
+    const qs = call.request.item.split(";");
+    Queues = {};
+    var Q;
+    for (let i = 0; i < qs.length; i += 2) {
+      Q = JSON.parse(qs[i + 1]);
+      Queues[qs[i]] = Q;
+      let encrypted;
+      switch (Q.method) {
+        case "sendString":
+          encrypted = caesarCrypt(Q.method);
+          sendString(Q.mc1, Q.mc2, encrypted, qs[i]);
+          break;
+        case "sendInt":
+          encoded = caesarCryptog(1); //Aca iria un input de int en vez del numero quemado si se va a hacer ese cambio
+          sendInt(mc1, mc2, encoded, id);
+          break;
+      }
+    }
+    callback(null, { status: true, response: "Queues recieved" });
   },
 });
 
@@ -151,18 +175,27 @@ function sendString(sender, client, s, id) {
 }
 
 function sendQueue(queue, id) {
-  Proxy.SendQueue({ item: id + "," + queue[0].stringify() + "," + queue[1] }, (err, data) => {
+  //console.log(id + ";" + JSON.stringify(queue));
+  proxy.SendQueue({ item: id + ";" + JSON.stringify(queue) }, (err, data) => {
     if (err) {
       console.log("Proxy desconectado, reintentando conexion en 3s");
       setTimeout(function () {
         sendQueue(queue, id);
       }, 3000);
-    } else {
-      console.log('Recived Int:', data["response"]); // API response
-      if (Queues[id])
-        sendInt(client, sender, data["response"], id);
     }
   });
+}
+
+function caesarCrypt(unencoded) {
+  let str = unencoded;
+  let result = '';
+  for (let i = str.length - 1; i >= 0; i--) {
+    let charCode = str.charCodeAt(i);
+    let newCharCode = charCode + 13;
+    let newChar = String.fromCharCode(newCharCode);
+    result += newChar;
+  }
+  return result;
 }
 
 function caesarCryptog(unencoded) {
@@ -217,7 +250,7 @@ const microService = grpc.loadPackageDefinition(packageDefinition).MicroService;
 const momService = grpc.loadPackageDefinition(packageDefinition).MOMService;
 
 function main() {
-  proxy = momService(PROXY, grpc.credentials.createInsecure());
+  proxy = new momService(PROXY, grpc.credentials.createInsecure());
   for (let i = 0; i < MOMS.length; i++) {
     CurrentMoms[i] = new momService(MOMS[i], grpc.credentials.createInsecure());
   }

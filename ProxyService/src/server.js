@@ -95,8 +95,16 @@ async function checkMoms() {
   mainMom = null;
   for (let i = 0; i < MOMS.length; i++) {
     CurrentMoms[i].CheckOnline({}, (err, data) => {
-      if (!err)
+      if (!err && mainMom != CurrentMoms[i]) {
         mainMom = CurrentMoms[i];
+        mainMom.SendQueue({ item: Queues }, (err, data) => {
+          if (err) {
+            console.log(err);
+          } else {
+            console.log('Change in the main MOM: ', data.response);
+          }
+        });
+      }
     });
   }
   await wait(3000);
