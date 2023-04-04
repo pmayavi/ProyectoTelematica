@@ -1,13 +1,13 @@
 import dotenv from 'dotenv';
 import grpc from '@grpc/grpc-js';
 import protoLoader from '@grpc/proto-loader';
+import fs from 'fs';
 
 dotenv.config()
 
 const PROTO_PATH = process.env.PROTO_PATH;
 const MOMS = process.env.MOMS.split(',');
 const CurrentMoms = new Array(MOMS.length);
-const fs = require('fs');
 var mainMom;
 
 const packageDefinition = protoLoader.loadSync(
@@ -72,20 +72,21 @@ server.addService(proto.MOMService.service, {
           } else
             callback(null, { status: false, response: "Wrong user or password" });
         } else
-          callback(null, { status: false, response: "Queue doesn't exist" }); 
+          callback(null, { status: false, response: "Queue doesn't exist" });
       }
     });
   },
 
   SendQueue: (call, callback) => {
     console.log(call.request.item);
-    JsonComponents = call.request.item.split(';');
-    objId = JSON.parse(JsonComponents[0]);
-    objBody= JSON.parse(JsonComponents[1]);
-    combine = Object.assign(objId, objBody);
-    combine = JSON.stringify(combine);
-    existingJson = JSON.parse(fs.readFileSync('cache.json'));
-    existingJson.newData=combine;
+    var JsonComponents = call.request.item.split(';');
+    var objId = JsonComponents[0];
+    var objBody = JSON.parse(JsonComponents[1]);
+    let existingJson = {};
+    if (fs.statSync('cache.json').size > 0) {
+      existingJson = JSON.parse(fs.readFileSync('cache.json'));
+    }
+    existingJson[objId] = objBody;
 
     fs.writeFile('cache.json', JSON.stringify(existingJson), (err) => {
       if (err) {
@@ -94,7 +95,7 @@ server.addService(proto.MOMService.service, {
         console.log('JSON file updated');
       }
     });
-
+    callback(null, { status: true, response: "New Queue" });
   },
 });
 
