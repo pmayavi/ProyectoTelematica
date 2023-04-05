@@ -11,6 +11,11 @@ Se realiza un sistema de Pull a la hora de manejar el MOM, pues se requiere una 
 
 ## Diseño
 
+![Diagrama de arquitectura](https://github.com/pmayavi/ProyectoTelematica/blob/main/ArqDiagram.jpg)
+
+La presente arquitecrura se basa en la comunicación propiciada por el archivo .proto, compartido por todos los componentes de la arquitectura a excepción del cliente (postman). 
+
+Es importante aclarar que las Follower MOMs están constantemente verificando (cada tres segundos) que exista una Leader MOM, se da un caso similar entre el proxy y el leader MOM.
 
 ## Implementacion
 
