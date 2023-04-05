@@ -26,84 +26,78 @@ const server = new grpc.Server();
 
 server.addService(proto.MOMService.service, {
   GetRequest: (call, callback) => {
-    console.log(call.request);
     mainMom.GetRequest(call.request, (err, data) => {
       if (err) {
         console.log(err);
         callback(null, { status: false, response: err });
       } else {
-        console.log('Response received from remote service:', data);
         callback(null, { status: true, response: data.response });
       }
     });
   },
 
   GetQueues: (call, callback) => {
-    console.log(call.request);
-    mainMom.GetRequest(call.request, (err, data) => {
+    mainMom.GetQueues(call.request, (err, data) => {
       if (err) {
         console.log(err);
         callback(null, { status: false, response: err });
       } else {
-        var response = "";
-        for (const [key, value] of Object.entries(Queues)) {
-          response += "||| " + key + " | " + value[1] + " | " + value[0].user + " | " + value[0].method + " |||";
-        }
-        callback(null, { status: true, response: response });
+        callback(null, { status: true, response: data.response });
       }
     });
-
   },
 
   RemoveQueue: (call, callback) => {
-    console.log(call.request);
-    mainMom.GetRequest(call.request, (err, data) => {
-      if (err) {
-        console.log(err);
-        callback(null, { status: false, response: err });
-      } else {
-        const user = call.request.user;
-        const pass = call.request.pass;
-        const id = call.request.id;
-        if (Queues[id]) {
-          if (Queues[id][0].user === user && Queues[id][0].pass === pass) {
-            delete Queues[id];
-            callback(null, { status: true, response: "Queue deleted successfully" });
-          } else
-            callback(null, { status: false, response: "Wrong user or password" });
-        } else
-          callback(null, { status: false, response: "Queue doesn't exist" });
+    if (call.request.id === "DELETE") {
+      let existingJson = {};
+      let id = call.request.pass;
+      if (fs.statSync('cache.json').size > 0)
+        existingJson = JSON.parse(fs.readFileSync('cache.json'));
+      if (existingJson[id]) {
+        delete existingJson[id];
+        fs.writeFile('cache.json', JSON.stringify(existingJson, null, 4), (err) => {
+          if (err)
+            console.error(err);
+        });
       }
-    });
+    } else {
+      mainMom.RemoveQueue(call.request, (err, data) => {
+        if (err) {
+          console.log(err);
+          callback(null, { status: false, response: err });
+        } else {
+          callback(null, { status: true, response: data.response });
+        }
+      });
+    }
+  },
+
+  CheckOnline: (_, callback) => {
+    callback(null, { status: true, response: "Proxy Online" });
   },
 
   SendQueue: (call, callback) => {
-    console.log(call.request.item);
     var JsonComponents = call.request.item.split(';');
     var objId = JsonComponents[0];
     var objBody = JSON.parse(JsonComponents[1]);
     let existingJson = {};
-    if (fs.statSync('cache.json').size > 0) {
+    if (fs.statSync('cache.json').size > 0)
       existingJson = JSON.parse(fs.readFileSync('cache.json'));
-    }
     existingJson[objId] = objBody;
-
-    fs.writeFile('cache.json', JSON.stringify(existingJson), (err) => {
-      if (err) {
+    fs.writeFile('cache.json', JSON.stringify(existingJson, null, 4), (err) => {
+      if (err)
         console.error(err);
-      } else {
-        console.log('JSON file updated');
-      }
     });
     callback(null, { status: true, response: "New Queue" });
   },
 });
 
+const address = "localhost:8081";
 server.bindAsync(
-  "localhost:8081",
+  address,
   grpc.ServerCredentials.createInsecure(),
   (error, port) => {
-    console.log("Server running at 0.0.0.0:8080");
+    console.log("Server running at ", address);
     server.start();
   }
 );
@@ -114,13 +108,17 @@ async function checkMoms() {
     CurrentMoms[i].CheckOnline({}, (err, data) => {
       if (!err && mainMom != CurrentMoms[i]) {
         mainMom = CurrentMoms[i];
-        mainMom.SendQueue({ item: Queues }, (err, data) => {
-          if (err) {
-            console.log(err);
-          } else {
-            console.log('Change in the main MOM: ', data.response);
-          }
-        });
+        let existingJson = {};
+        if (fs.statSync('cache.json').size > 0) {
+          existingJson = JSON.parse(fs.readFileSync('cache.json'));
+          mainMom.SendQueue({ item: existingJson }, (err, data) => {
+            if (err)
+              console.log(err);
+            else
+              console.log('Change in the main MOM: ', data.response);
+
+          });
+        }
       }
     });
   }

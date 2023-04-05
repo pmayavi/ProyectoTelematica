@@ -10,7 +10,7 @@ service MOMService{
     rpc GetQueues(Que) returns (ResponseString) {}
     rpc RemoveQueue(Queue) returns (ResponseString) {}
     rpc CheckOnline(Que) returns (ResponseString) {}
-    rpc SendQueue(str) returns (Que) {}
+    rpc SendQueue(str) returns (ResponseString) {}
 }
 
 message Request{

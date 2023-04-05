@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import grpc from '@grpc/grpc-js';
 import protoLoader from '@grpc/proto-loader';
 import { v4 } from 'uuid';
+import { Console } from 'console';
 
 dotenv.config()
 
@@ -14,6 +15,7 @@ const CurrentMoms = new Array(MOMS.length);
 const maxHosts = HOSTS.length + 1;
 const CurrentHosts = new Array(maxHosts);
 var Queues = {};
+const address = "localhost:8080";
 var proxy = null;
 
 const packageDefinition = protoLoader.loadSync(
@@ -49,7 +51,7 @@ server.addService(proto.MOMService.service, {
           call.request["time"] = new Date().toLocaleString();
           Queues[id] = call.request;
           sendQueue(Queues[id], id);
-          let encrypted = caesarCrypt(Q.method);
+          let encrypted = caesarCrypt(method);
           sendString(mc1, mc2, encrypted, id);
           callback(null, { status: true, response: id });
           break;
@@ -87,6 +89,7 @@ server.addService(proto.MOMService.service, {
     const id = call.request.id;
     if (Queues[id]) {
       if (Queues[id].user === user && Queues[id].pass === pass) {
+        sendDelete(id);
         delete Queues[id];
         callback(null, { status: true, response: "Queue deleted successfully" });
       } else
@@ -101,17 +104,21 @@ server.addService(proto.MOMService.service, {
   },
 
   SendQueue: (call, callback) => {
+    console.log(call.request);
     const qs = call.request.item.split(";");
+    console.log(qs);
     Queues = {};
-    var Q;
+    console.log(qs.length);
     for (let i = 0; i < qs.length; i += 2) {
-      Q = JSON.parse(qs[i + 1]);
+      console.log(JSON.parse(qs[i + 1]));
+      const Q = JSON.parse(qs[i + 1]);
+      console.log(Q);
       Queues[qs[i]] = Q;
       let encrypted;
       switch (Q.method) {
         case "sendString":
           encrypted = caesarCrypt(Q.method);
-          sendString(Q.mc1, Q.mc2, encrypted, qs[i]);
+          sendString(CurrentHosts[Q.mc1], CurrentHosts[Q.mc2], encrypted, qs[i]);
           break;
         case "sendInt":
           encoded = caesarCryptog(1); //Aca iria un input de int en vez del numero quemado si se va a hacer ese cambio
@@ -186,6 +193,17 @@ function sendQueue(queue, id) {
   });
 }
 
+function sendDelete(id) {
+  proxy.RemoveQueue({ user: "", pass: id, id: "DELETE" }, (err, data) => {
+    if (err) {
+      console.log("Proxy desconectado, reintentando conexion en 3s");
+      setTimeout(function () {
+        RemoveQueue(id);
+      }, 3000);
+    }
+  });
+}
+
 function caesarCrypt(unencoded) {
   let str = unencoded;
   let result = '';
@@ -214,6 +232,12 @@ function caesarCryptog(unencoded) {
 }
 
 async function checkMoms() {
+  proxy.CheckOnline({}, (err, data) => {
+    if (err)
+      console.log("ERROR");
+    else
+      console.log(data);
+  });
   var availableMoms = 0;
   for (let i = 0; i < MOMS.length; i++) {
     CurrentMoms[i].CheckOnline({}, (err, data) => {
@@ -226,10 +250,10 @@ async function checkMoms() {
   if (availableMoms == 0) {
     console.log("This is the main MOM");
     server.bindAsync(
-      "localhost:8080",
+      address,
       grpc.ServerCredentials.createInsecure(),
       (error, port) => {
-        console.log("Server running at 0.0.0.0:8080");
+        console.log("Server running at ", address);
         server.start();
       }
     );
@@ -237,6 +261,7 @@ async function checkMoms() {
     console.log("There's already a main MOM, checking again in 5 seconds...");
     setTimeout(function () { checkMoms(); }, 4000);
   }
+  //checkMoms();
 
 }
 
