@@ -2,7 +2,6 @@ import dotenv from 'dotenv';
 import grpc from '@grpc/grpc-js';
 import protoLoader from '@grpc/proto-loader';
 import { v4 } from 'uuid';
-import { Console } from 'console';
 
 dotenv.config()
 
@@ -15,7 +14,7 @@ const CurrentMoms = new Array(MOMS.length);
 const maxHosts = HOSTS.length + 1;
 const CurrentHosts = new Array(maxHosts);
 var Queues = {};
-const address = "localhost:8080";
+const address = "localhost:8081";
 var proxy = null;
 
 const packageDefinition = protoLoader.loadSync(
@@ -104,25 +103,17 @@ server.addService(proto.MOMService.service, {
   },
 
   SendQueue: (call, callback) => {
-    console.log(call.request);
-    const qs = call.request.item.split(";");
-    console.log(qs);
-    Queues = {};
-    console.log(qs.length);
-    for (let i = 0; i < qs.length; i += 2) {
-      console.log(JSON.parse(qs[i + 1]));
-      const Q = JSON.parse(qs[i + 1]);
-      console.log(Q);
-      Queues[qs[i]] = Q;
+    Queues = JSON.parse(call.request.item);
+    for (const [key, value] of Object.entries(Queues)) {
       let encrypted;
-      switch (Q.method) {
+      switch (value.method) {
         case "sendString":
-          encrypted = caesarCrypt(Q.method);
-          sendString(CurrentHosts[Q.mc1], CurrentHosts[Q.mc2], encrypted, qs[i]);
+          encrypted = caesarCrypt(value.method);
+          sendString(CurrentHosts[value.mc1], CurrentHosts[value.mc2], encrypted, key);
           break;
         case "sendInt":
           encoded = caesarCryptog(1); //Aca iria un input de int en vez del numero quemado si se va a hacer ese cambio
-          sendInt(mc1, mc2, encoded, id);
+          sendInt(CurrentHosts[value.mc1], CurrentHosts[value.mc2], encoded, key);
           break;
       }
     }
@@ -198,7 +189,7 @@ function sendDelete(id) {
     if (err) {
       console.log("Proxy desconectado, reintentando conexion en 3s");
       setTimeout(function () {
-        RemoveQueue(id);
+        sendDelete(id);
       }, 3000);
     }
   });
@@ -232,12 +223,6 @@ function caesarCryptog(unencoded) {
 }
 
 async function checkMoms() {
-  proxy.CheckOnline({}, (err, data) => {
-    if (err)
-      console.log("ERROR");
-    else
-      console.log(data);
-  });
   var availableMoms = 0;
   for (let i = 0; i < MOMS.length; i++) {
     CurrentMoms[i].CheckOnline({}, (err, data) => {

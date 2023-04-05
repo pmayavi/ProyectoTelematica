@@ -8,7 +8,8 @@ dotenv.config()
 const PROTO_PATH = process.env.PROTO_PATH;
 const MOMS = process.env.MOMS.split(',');
 const CurrentMoms = new Array(MOMS.length);
-var mainMom;
+const address = "localhost:8080";
+var mainMom, imom;
 
 const packageDefinition = protoLoader.loadSync(
   PROTO_PATH,
@@ -37,6 +38,7 @@ server.addService(proto.MOMService.service, {
   },
 
   GetQueues: (call, callback) => {
+    console.log(mainMom);
     mainMom.GetQueues(call.request, (err, data) => {
       if (err) {
         console.log(err);
@@ -92,7 +94,6 @@ server.addService(proto.MOMService.service, {
   },
 });
 
-const address = "localhost:8081";
 server.bindAsync(
   address,
   grpc.ServerCredentials.createInsecure(),
@@ -103,20 +104,18 @@ server.bindAsync(
 );
 
 async function checkMoms() {
-  mainMom = null;
   for (let i = 0; i < MOMS.length; i++) {
     CurrentMoms[i].CheckOnline({}, (err, data) => {
-      if (!err && mainMom != CurrentMoms[i]) {
+      if (!err && data != undefined && imom != i) {
         mainMom = CurrentMoms[i];
-        let existingJson = {};
+        imom = i;
         if (fs.statSync('cache.json').size > 0) {
-          existingJson = JSON.parse(fs.readFileSync('cache.json'));
-          mainMom.SendQueue({ item: existingJson }, (err, data) => {
-            if (err)
+          mainMom.SendQueue({ item: fs.readFileSync('cache.json').toString('utf8') }, (err, data) => {
+            if (err) {
               console.log(err);
+            }
             else
               console.log('Change in the main MOM: ', data.response);
-
           });
         }
       }
