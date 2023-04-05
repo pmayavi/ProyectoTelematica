@@ -2,19 +2,29 @@ import dotenv from 'dotenv';
 import grpc from '@grpc/grpc-js';
 import protoLoader from '@grpc/proto-loader';
 import { v4 } from 'uuid';
+import {//Importar los metodos de util.js
+  getRequestValues,
+  sendString,
+  sendInt,
+  sendQueue,
+  sendDelete,
+  caesarCrypt,
+  caesarCryptog,
+  wait
+} from './utils.js';
 
 dotenv.config()
-
+//Entender el contenido del archivo .env
 const PROTO_PATH = process.env.PROTO_PATH;
 const PROXY = process.env.PROXY;
-const MOMS = process.env.MOMS.split(',');
+const MOMS = process.env.MOMS.split(','); //Muchas IPs separadas por coma
 const HOSTS = process.env.HOSTS.split(',');
-const USERS = JSON.parse(process.env.USERS);
+const USERS = JSON.parse(process.env.USERS);//UN string vuelto JSON 
 const CurrentMoms = new Array(MOMS.length);
 const maxHosts = HOSTS.length + 1;
 const CurrentHosts = new Array(maxHosts);
 var Queues = {};
-const address = "localhost:8081";
+const address = "0.0.0.0:8080";
 var proxy = null;
 
 const packageDefinition = protoLoader.loadSync(
@@ -27,14 +37,14 @@ const packageDefinition = protoLoader.loadSync(
     oneofs: true
   });
 
-console.info("Consumer service is started...");
+console.info("MOM service is started...");
 const proto = grpc.loadPackageDefinition(packageDefinition);
 const server = new grpc.Server();
 
 server.addService(proto.MOMService.service, {
   GetRequest: (call, callback) => {
     console.log("New request");
-    const [user, pass, mc1, mc2, method] = getRequestValues(call.request);
+    const [user, pass, mc1, mc2, method] = getRequestValues(call.request, CurrentHosts, maxHosts);//Tomar los datos de la request
     if (!mc1)
       callback(null, { status: false, response: mc2 });
     else if (!mc2)
@@ -42,28 +52,27 @@ server.addService(proto.MOMService.service, {
     if (!mc1 || !mc2)
       return;
 
-    if (user in USERS && USERS[user] === pass) {
+    if (user in USERS && USERS[user] === pass) {//Si el usuario es valido
       console.log(method);
-      const id = v4();
-      switch (method) {
+      const id = v4();//Crear ID unica
+      call.request["time"] = new Date().toLocaleString();//Guardar el tiempo de creacion de cola
+      switch (method) {//Segun que metodo es
         case "sendString":
-          call.request["time"] = new Date().toLocaleString();
-          Queues[id] = call.request;
-          sendQueue(Queues[id], id);
-          let encrypted = caesarCrypt(method);
-          sendString(mc1, mc2, encrypted, id);
+          Queues[id] = call.request;//Guardar la cola en el registro local
+          sendQueue(Queues[id], id, proxy);//Enviar la cola al Proxy para persistencia
+          let encrypted = caesarCrypt(method);//Encriptar el primer mensaje ya que el MOM no puede ver los mensajes 
+          sendString(Queues, mc1, mc2, encrypted, id);//Iniciar el ciclo
           callback(null, { status: true, response: id });
           break;
         case "sendInt":
-          call.request["time"] = new Date().toLocaleString();
           Queues[id] = call.request;
-          sendQueue(Queues[id], id);
+          sendQueue(Queues[id], id, proxy);
           encoded = caesarCryptog(1); //Aca iria un input de int en vez del numero quemado si se va a hacer ese cambio
-          sendInt(mc1, mc2, encoded, id);
+          sendInt(Queues, mc1, mc2, encoded, id);
           callback(null, { status: true, response: id });
           break;
         default:
-          callback(null, { status: false, response: "Method doesn't exist" });
+          callback(null, { status: false, response: "Method doesn't exist" });//El metodo no existe y no se guarda
       }
     }
     else
@@ -71,7 +80,7 @@ server.addService(proto.MOMService.service, {
   },
 
   GetQueues: (_, callback) => {
-    console.log('GetQueues');
+    console.log('GetQueues');//Darle al usuario una lista de las colas corriendo actualmente
     'use strict'; //https://stackoverflow.com/questions/34913675/how-to-iterate-keys-values-in-javascript
     var response = "";
     for (const [key, value] of Object.entries(Queues)) {
@@ -82,14 +91,14 @@ server.addService(proto.MOMService.service, {
   },
 
   RemoveQueue: (call, callback) => {
-    console.log('RemoveQueue');
+    console.log('RemoveQueue');//Remover una cola desde su ID unico
     const user = call.request.user;
     const pass = call.request.pass;
     const id = call.request.id;
-    if (Queues[id]) {
-      if (Queues[id].user === user && Queues[id].pass === pass) {
-        sendDelete(id);
-        delete Queues[id];
+    if (Queues[id]) {//Si la cola existe
+      if (Queues[id].user === user && Queues[id].pass === pass) {//SI el mismo usuario que la creo es el que la elimina
+        delete Queues[id];//Eliminarla
+        sendDelete(id, proxy);//Enviarle al Proxy la confirmacion de su eliminacion
         callback(null, { status: true, response: "Queue deleted successfully" });
       } else
         callback(null, { status: false, response: "Wrong user or password" });
@@ -97,23 +106,22 @@ server.addService(proto.MOMService.service, {
       callback(null, { status: false, response: "Queue doesn't exist" });
   },
 
-  CheckOnline: (_, callback) => {
-    //console.log("CheckOnline");
+  CheckOnline: (_, callback) => {//Metodo para que las otras MOM identifiquen si ya hay una MOM funcional
     callback(null, { status: true, response: "MOM functional" });
   },
 
-  SendQueue: (call, callback) => {
+  SendQueue: (call, callback) => {//Metodo para recibir la lista de las colas actuales al inicializarse el MOM
     Queues = JSON.parse(call.request.item);
     for (const [key, value] of Object.entries(Queues)) {
       let encrypted;
-      switch (value.method) {
+      switch (value.method) {//Y reinicia todos los procesos 
         case "sendString":
           encrypted = caesarCrypt(value.method);
-          sendString(CurrentHosts[value.mc1], CurrentHosts[value.mc2], encrypted, key);
+          sendString(Queues, CurrentHosts[value.mc1], CurrentHosts[value.mc2], encrypted, key);
           break;
         case "sendInt":
           encoded = caesarCryptog(1); //Aca iria un input de int en vez del numero quemado si se va a hacer ese cambio
-          sendInt(CurrentHosts[value.mc1], CurrentHosts[value.mc2], encoded, key);
+          sendInt(Queues, CurrentHosts[value.mc1], CurrentHosts[value.mc2], encoded, key);
           break;
       }
     }
@@ -121,120 +129,19 @@ server.addService(proto.MOMService.service, {
   },
 });
 
-function getRequestValues(request) {
-  const user = request.user;
-  const pass = request.pass;
-  const mc1 = request.mc1;
-  //console.log(request);
-  if (mc1 <= 0 || mc1 >= maxHosts)
-    return [null, null, null, "Invalid number for mc1", null];
-  const MC1 = CurrentHosts[mc1];
-  const mc2 = request.mc2;
-  if (mc2 <= 0 || mc2 >= maxHosts)
-    return [null, null, "Invalid number for mc2", null, null];
-  const MC2 = CurrentHosts[mc2];
-  const method = request.method;
-  return [user, pass, MC1, MC2, method];
-}
-
-function sendInt(sender, client, n, id) {
-  sender.SendInt({ num: n }, (err, data) => {
-    if (err) {
-      if (Queues[id]) {
-        console.log("MicroServicio desconectado, reintentando conexion en 5s");
-        setTimeout(function () {
-          sendInt(sender, client, n, id)
-        }, 5000);
-      }
-    } else {
-      console.log('Recived String:', data["response"]); // API response
-      if (Queues[id])
-        sendString(client, sender, data["response"], id);
-    }
-  });
-}
-
-function sendString(sender, client, s, id) {
-  sender.SendString({ item: s }, (err, data) => {
-    if (err) {
-      if (Queues[id]) {
-        console.log("MicroServicio desconectado, reintentando conexion en 5s");
-        setTimeout(function () {
-          sendString(sender, client, s, id);
-        }, 5000);
-      } else
-        console.log("MicroServicio desconectado.");
-    } else {
-      console.log('Recived Int:', data["response"]); // API response
-      if (Queues[id])
-        sendInt(client, sender, data["response"], id);
-    }
-  });
-}
-
-function sendQueue(queue, id) {
-  //console.log(id + ";" + JSON.stringify(queue));
-  proxy.SendQueue({ item: id + ";" + JSON.stringify(queue) }, (err, data) => {
-    if (err) {
-      console.log("Proxy desconectado, reintentando conexion en 3s");
-      setTimeout(function () {
-        sendQueue(queue, id);
-      }, 3000);
-    }
-  });
-}
-
-function sendDelete(id) {
-  proxy.RemoveQueue({ user: "", pass: id, id: "DELETE" }, (err, data) => {
-    if (err) {
-      console.log("Proxy desconectado, reintentando conexion en 3s");
-      setTimeout(function () {
-        sendDelete(id);
-      }, 3000);
-    }
-  });
-}
-
-function caesarCrypt(unencoded) {
-  let str = unencoded;
-  let result = '';
-  for (let i = str.length - 1; i >= 0; i--) {
-    let charCode = str.charCodeAt(i);
-    let newCharCode = charCode + 13;
-    let newChar = String.fromCharCode(newCharCode);
-    result += newChar;
-  }
-  return result;
-}
-
-function caesarCryptog(unencoded) {
-  const unencodedString = unencoded.toString();
-  let encoded = '';
-  for (let i = 0; i < unencodedString.length; i++) {
-    const charCode = unencodedString.charCodeAt(i);
-    if (charCode >= 48 && charCode <= 57) {
-      const newDigit = ((charCode - 48 + shift) % 10);
-      encoded += newDigit.toString();
-    } else {
-      encoded += unencodedString[i];
-    }
-  }
-  return parseInt(encoded);
-}
-
-async function checkMoms() {
+async function checkMoms() {//Ciclo que sucede cuando la MOM no es la principal
   var availableMoms = 0;
-  for (let i = 0; i < MOMS.length; i++) {
+  for (let i = 0; i < MOMS.length; i++) {//Mira cuantas MOM estan funcionando
     CurrentMoms[i].CheckOnline({}, (err, data) => {
       if (!err)
         availableMoms += 1;
     });
   }
-  await wait(1000);
+  await wait(1000);//Espera que todas puedan responder
   console.log('Available MOMs: ', availableMoms);
-  if (availableMoms == 0) {
+  if (availableMoms == 0) {//Si no hay MOMs funcionando, esta toma ese rol
     console.log("This is the main MOM");
-    server.bindAsync(
+    server.bindAsync(//Se inicia el lado servidor para recibir requests del Proxy
       address,
       grpc.ServerCredentials.createInsecure(),
       (error, port) => {
@@ -243,33 +150,23 @@ async function checkMoms() {
       }
     );
   } else {
-    console.log("There's already a main MOM, checking again in 5 seconds...");
-    setTimeout(function () { checkMoms(); }, 4000);
+    console.log("There's already a main MOM, checking again in 3 seconds...");
+    setTimeout(function () { checkMoms(); }, 2000);//Si ya hay una MOM funcional, vuelve a mirar por si pierde funcionalidad
   }
-  //checkMoms();
-
-}
-
-function wait(ms) {
-  return new Promise(resolve => {
-    setTimeout(resolve, ms);
-  });
 }
 
 const microService = grpc.loadPackageDefinition(packageDefinition).MicroService;
 const momService = grpc.loadPackageDefinition(packageDefinition).MOMService;
 
 function main() {
-  proxy = new momService(PROXY, grpc.credentials.createInsecure());
-  for (let i = 0; i < MOMS.length; i++) {
+  proxy = new momService(PROXY, grpc.credentials.createInsecure());//Se inicia la conexion con el Proxy
+  for (let i = 0; i < MOMS.length; i++) {//Se inicia la conexion con todas las otras MOM
     CurrentMoms[i] = new momService(MOMS[i], grpc.credentials.createInsecure());
   }
-  for (let i = 0; i < HOSTS.length; i++) {
+  for (let i = 0; i < HOSTS.length; i++) {//Se inicia la conexion con todos los micro servicios
     CurrentHosts[i + 1] = new microService(HOSTS[i], grpc.credentials.createInsecure());
   }
-  //sendInt(CurrentHosts[1], CurrentHosts[2], 2, "id");
-  checkMoms();
-
+  checkMoms();//Se mira si ya hay un MOM principal, o toma ese rol
 };
 
 main();

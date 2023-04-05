@@ -4,11 +4,11 @@ import protoLoader from '@grpc/proto-loader';
 import fs from 'fs';
 
 dotenv.config()
-
+//Entender el contenido del archivo .env
 const PROTO_PATH = process.env.PROTO_PATH;
 const MOMS = process.env.MOMS.split(',');
 const CurrentMoms = new Array(MOMS.length);
-const address = "localhost:8080";
+const address = "0.0.0.0:8080";
 var mainMom, imom;
 
 const packageDefinition = protoLoader.loadSync(
@@ -26,7 +26,7 @@ const proto = grpc.loadPackageDefinition(packageDefinition);
 const server = new grpc.Server();
 
 server.addService(proto.MOMService.service, {
-  GetRequest: (call, callback) => {
+  GetRequest: (call, callback) => {//Redirige las request al main MOM
     mainMom.GetRequest(call.request, (err, data) => {
       if (err) {
         console.log(err);
@@ -37,8 +37,7 @@ server.addService(proto.MOMService.service, {
     });
   },
 
-  GetQueues: (call, callback) => {
-    console.log(mainMom);
+  GetQueues: (call, callback) => {//Redirige las request al main MOM
     mainMom.GetQueues(call.request, (err, data) => {
       if (err) {
         console.log(err);
@@ -50,7 +49,7 @@ server.addService(proto.MOMService.service, {
   },
 
   RemoveQueue: (call, callback) => {
-    if (call.request.id === "DELETE") {
+    if (call.request.id === "DELETE") {//Cuando el MOM confirma la eliminacion, lo elimina del cache
       let existingJson = {};
       let id = call.request.pass;
       if (fs.statSync('cache.json').size > 0)
@@ -62,7 +61,7 @@ server.addService(proto.MOMService.service, {
             console.error(err);
         });
       }
-    } else {
+    } else {//Redirige las request al main MOM
       mainMom.RemoveQueue(call.request, (err, data) => {
         if (err) {
           console.log(err);
@@ -74,12 +73,12 @@ server.addService(proto.MOMService.service, {
     }
   },
 
-  CheckOnline: (_, callback) => {
+  CheckOnline: (_, callback) => {//Servicio para que los MOM sepan el estado del Proxy
     callback(null, { status: true, response: "Proxy Online" });
   },
 
-  SendQueue: (call, callback) => {
-    var JsonComponents = call.request.item.split(';');
+  SendQueue: (call, callback) => {//Cuando el MOM recibe la request, le confirma al Proxy que se creo una nueva 
+    var JsonComponents = call.request.item.split(';');//y este la guarda en cache
     var objId = JsonComponents[0];
     var objBody = JSON.parse(JsonComponents[1]);
     let existingJson = {};
@@ -94,7 +93,7 @@ server.addService(proto.MOMService.service, {
   },
 });
 
-server.bindAsync(
+server.bindAsync(//Se inicia la parte de servidor que escuhca las peticiones del cliente
   address,
   grpc.ServerCredentials.createInsecure(),
   (error, port) => {
@@ -103,29 +102,28 @@ server.bindAsync(
   }
 );
 
-async function checkMoms() {
+async function checkMoms() {//Ciclo infinito de revisar todas las MOM
   for (let i = 0; i < MOMS.length; i++) {
     CurrentMoms[i].CheckOnline({}, (err, data) => {
       if (!err && data != undefined && imom != i) {
-        mainMom = CurrentMoms[i];
+        mainMom = CurrentMoms[i];//Al encontrar una MOM disponible que no es la main, se cambia la main
         imom = i;
         if (fs.statSync('cache.json').size > 0) {
           mainMom.SendQueue({ item: fs.readFileSync('cache.json').toString('utf8') }, (err, data) => {
-            if (err) {
+            if (err)
               console.log(err);
-            }
-            else
+            else//Se le envian las colas guardadas en cache
               console.log('Change in the main MOM: ', data.response);
           });
         }
       }
     });
   }
-  await wait(3000);
+  await wait(3000);//Vuelve a revisar cada 3 segundos
   checkMoms();
 }
 
-function wait(ms) {
+function wait(ms) {//Metodo para esperar en milisegundos
   return new Promise(resolve => {
     setTimeout(resolve, ms);
   });
@@ -134,7 +132,7 @@ function wait(ms) {
 const momService = grpc.loadPackageDefinition(packageDefinition).MOMService;
 
 function main() {
-  for (let i = 0; i < MOMS.length; i++) {
+  for (let i = 0; i < MOMS.length; i++) {//Se inicializa la conexion con todas las MOM
     CurrentMoms[i] = new momService(MOMS[i], grpc.credentials.createInsecure());
   }
   checkMoms();

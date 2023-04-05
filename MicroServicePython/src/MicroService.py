@@ -16,10 +16,9 @@ class MicroService(Service_pb2_grpc.MicroServiceServicer):
     text = ""
 
     def SendString(self, response, context):
-        text += response.item
+        decrypted = self.cryptog(response.item)
+        text += decrypted
         print("Request is received: " + text)
-        decrypted=self.cryptog(text)
-        print("Decrypted text reads: " + decrypted)
         file = open("log.txt", "a")
         file.write(decrypted)
         file.close()
@@ -27,25 +26,23 @@ class MicroService(Service_pb2_grpc.MicroServiceServicer):
         return Service_pb2.ResponseInt(status=1, response=self.caesarCryptog(2))
 
     def SendInt(self, response, context):
-        print(response)
-        num += response.num
+        decrypted = self.caesarDecrypt(response.num)
+        num += decrypted
         print("Request is received: " + num)
-        decrypted = self.caesarDecrypt(num)
-        print("\nDecrypted it's: " + decrypted)
         file = open("log.txt", "a")
-        file.write(str(decrypted))
+        file.write(str(decrypted) + ' ')
         file.close()
         sleep(uniform(0.1, 5))
         return Service_pb2.ResponseString(status=1, response=self.cryptog("Hola"))
-    
+
     def cryptog(self, iniText):
-        convText=""
+        convText = ""
         with open("Encryption.json") as json_file:
-            convert=json.load(json_file)
+            convert = json.load(json_file)
             for v in iniText:
-                convText=iniText.replace(v, convert(v))
-        return(convText)
-    
+                convText = iniText.replace(v, convert(v))
+        return (convText)
+
     def caesarCryptog(self, unencoded):
         encoded = ''
         shift = 3
@@ -56,7 +53,7 @@ class MicroService(Service_pb2_grpc.MicroServiceServicer):
             else:
                 encoded += char
         return int(encoded)
-    
+
     def caesarDecrypt(self, unencoded):
         encoded = ''
         shift = 3
