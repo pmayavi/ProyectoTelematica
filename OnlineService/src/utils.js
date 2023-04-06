@@ -18,9 +18,6 @@ export function sendString(Queues, sender, client, s, id) {//Metodo para enviar 
     sender.SendString({ item: s }, (err, data) => {
         if (err) {//Si hay un error, no se pudo conectar con el Host
             if (Queues[id]) {//Si la cola no se ha eliminado
-                console.log(err);
-                console.log(s);
-                console.log(typeof s);
                 console.log("MicroServicio desconectado, reintentando conexion en 5s");
                 setTimeout(function () {//Reintentar la conexion
                     sendString(Queues, sender, client, s, id);
@@ -39,6 +36,8 @@ export function sendInt(Queues, sender, client, n, id) {//Metodo para enviar de 
     sender.SendInt({ num: n }, (err, data) => {
         if (err) {
             if (Queues[id]) {
+                console.log(err);
+                console.log(n);
                 console.log("MicroServicio desconectado, reintentando conexion en 5s");
                 setTimeout(function () {
                     sendInt(Queues, sender, client, n, id)
@@ -82,13 +81,12 @@ export function caesarCrypt(unencoded) {//Encriptar el string
     for (let i = str.length - 1; i >= 0; i--) {
         let charCode = str.charCodeAt(i);
         let newCharCode = charCode + 13;
-        if (newCharCode > 122) {
+        if (newCharCode > 122)
             newCharCode -= 24
-        }
         let newChar;
-        if (newCharCode == 96) {
+        if (newCharCode == 96)
             result += 'h';
-        } else {
+        else {
             newChar = String.fromCharCode(newCharCode);
             result += newChar;
         }
