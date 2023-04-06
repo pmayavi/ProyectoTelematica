@@ -14,14 +14,15 @@ export function getRequestValues(request, CurrentHosts, maxHosts) {//Interpeta e
     return [user, pass, MC1, MC2, method];
 }
 
-export function sendString2(Queues, sender, client, s, id) {//Metodo para enviar de un micro servicio a otro un string
+export function sendString(Queues, sender, client, s, id) {//Metodo para enviar de un micro servicio a otro un string
     sender.SendString({ item: s }, (err, data) => {
         if (err) {//Si hay un error, no se pudo conectar con el Host
             if (Queues[id]) {//Si la cola no se ha eliminado
                 console.log(err);
+                console.log(s);
                 console.log("MicroServicio desconectado, reintentando conexion en 5s");
                 setTimeout(function () {//Reintentar la conexion
-                    sendString2(Queues, sender, client, s, id);
+                    sendString(Queues, sender, client, s, id);
                 }, 5000);
             } else
                 console.log("MicroServicio desconectado.");
