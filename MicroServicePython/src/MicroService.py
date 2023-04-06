@@ -40,7 +40,7 @@ class MicroService(Service_pb2_grpc.MicroServiceServicer):
         with open("Encryption.json") as json_file:
             convert = json.load(json_file)
             for v in iniText:
-                convText = iniText.replace(v, convert(v))
+                convText = iniText.replace(v, convert.get(v))
         return (convText)
 
     def caesarCryptog(self, unencoded):
