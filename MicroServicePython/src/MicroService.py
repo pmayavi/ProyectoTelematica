@@ -15,6 +15,10 @@ class MicroService(Service_pb2_grpc.MicroServiceServicer):
     num = 0
     text = ""
 
+    def __init__(self):
+        self.text = ""
+        self.num = 0
+
     def SendString(self, response, context):
         decrypted = self.cryptog(response.item)
         text += decrypted
