@@ -103,8 +103,10 @@ server.bindAsync(//Se inicia la parte de servidor que escuhca las peticiones del
 );
 
 async function checkMoms() {//Ciclo infinito de revisar todas las MOM
+  console.log("checkMoms");
   for (let i = 0; i < MOMS.length; i++) {
     CurrentMoms[i].CheckOnline({}, (err, data) => {
+      console.log(!err && data != undefined && imom != i);
       if (!err && data != undefined && imom != i) {
         mainMom = CurrentMoms[i];//Al encontrar una MOM disponible que no es la main, se cambia la main
         imom = i;

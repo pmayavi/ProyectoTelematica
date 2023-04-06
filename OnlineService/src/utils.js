@@ -18,9 +18,9 @@ export function sendString(Queues, sender, client, s, id) {//Metodo para enviar 
     sender.SendString({ item: s }, (err, data) => {
         if (err) {//Si hay un error, no se pudo conectar con el Host
             if (Queues[id]) {//Si la cola no se ha eliminado
-                consol.log(err);
-                consol.log(mc1);
-                consol.log(mc2);
+                console.log(err);
+                console.log(mc1);
+                console.log(mc2);
                 console.log("MicroServicio desconectado, reintentando conexion en 5s");
                 setTimeout(function () {//Reintentar la conexion
                     sendString(Queues, sender, client, s, id);
