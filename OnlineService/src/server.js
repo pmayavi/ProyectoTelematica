@@ -61,7 +61,6 @@ server.addService(proto.MOMService.service, {
           Queues[id] = call.request;//Guardar la cola en el registro local
           sendQueue(Queues[id], id, proxy);//Enviar la cola al Proxy para persistencia
           let encrypted = caesarCrypt(method);//Encriptar el primer mensaje ya que el MOM no puede ver los mensajes 
-          console.log(typeof encrypted);
           sendString(Queues, mc1, mc2, encrypted, id);//Iniciar el ciclo
           callback(null, { status: true, response: id });
           break;

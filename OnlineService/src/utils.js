@@ -20,6 +20,7 @@ export function sendString(Queues, sender, client, s, id) {//Metodo para enviar 
             if (Queues[id]) {//Si la cola no se ha eliminado
                 console.log(err);
                 console.log(s);
+                console.log(typeof s);
                 console.log("MicroServicio desconectado, reintentando conexion en 5s");
                 setTimeout(function () {//Reintentar la conexion
                     sendString(Queues, sender, client, s, id);
