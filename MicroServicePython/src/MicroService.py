@@ -1,4 +1,3 @@
-
 from concurrent import futures
 from time import sleep
 from random import uniform
@@ -45,7 +44,8 @@ class MicroService(Service_pb2_grpc.MicroServiceServicer):
             convert = json.load(json_file)
             for v in iniText:
                 convText = iniText.replace(v, convert[v])
-        return (convText)
+                iniText = convText
+        return convText
 
     def caesarCryptog(self, unencoded):
         encoded = ''
