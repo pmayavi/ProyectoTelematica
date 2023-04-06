@@ -83,7 +83,7 @@ export function caesarCrypt(unencoded) {//Encriptar el string
         let charCode = str.charCodeAt(i);
         let newCharCode = charCode + 13;
         if (newCharCode > 122) {
-            newCharCode -= 25
+            newCharCode -= 24
         }
         let newChar = String.fromCharCode(newCharCode);
         result += newChar;
