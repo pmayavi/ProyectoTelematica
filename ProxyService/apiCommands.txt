@@ -2,10 +2,9 @@ sudo apt update && sudo apt upgrade -y
 
 sudo curl -fsSL https://deb.nodesource.com/setup_19.x | sudo -E bash - && sudo apt-get install -y nodejs
 
-sudo git clone https://github.com/pmayavi/TopicosTelematica-2023-1.git
-cd TopicosTelematica-2023-1/Laboratorio\ N1-RPC/Back/OnlineService/src/
+sudo git clone https://github.com/pmayavi/ProyectoTelematica.git
+cd ProyectoTelematica/ProxyService/src/
 sudo node server.js
 
-sudo nano .env
-[Ip publica: 3.239.216.124 ]
-sudo node server.js
+cd ProyectoTelematica/ProxyService/src/
+sudo git pull && sudo node server.js

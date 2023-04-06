@@ -6,9 +6,5 @@ sudo git clone https://github.com/pmayavi/ProyectoTelematica.git
 cd ProyectoTelematica/OnlineService/src/
 sudo node server.js
 
-sudo npm install uuidv4
-sudo nano .env
-[Ip publica: 3.239.216.124]
-
 cd ProyectoTelematica/OnlineService/src/
 sudo git pull && sudo node server.js
