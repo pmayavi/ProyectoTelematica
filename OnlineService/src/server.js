@@ -4,7 +4,7 @@ import protoLoader from '@grpc/proto-loader';
 import { v4 } from 'uuid';
 import {//Importar los metodos de util.js
   getRequestValues,
-  sendString,
+  sendString2,
   sendInt,
   sendQueue,
   sendDelete,
@@ -153,6 +153,25 @@ async function checkMoms() {//Ciclo que sucede cuando la MOM no es la principal
     console.log("There's already a main MOM, checking again in 3 seconds...");
     setTimeout(function () { checkMoms(); }, 2000);//Si ya hay una MOM funcional, vuelve a mirar por si pierde funcionalidad
   }
+}
+
+function sendString(Queues, sender, client, s, id) {//Metodo para enviar de un micro servicio a otro un string
+  sender.SendString({ item: s }, (err, data) => {
+    if (err) {//Si hay un error, no se pudo conectar con el Host
+      if (Queues[id]) {//Si la cola no se ha eliminado
+        console.log(err);
+        console.log("MicroServicio desconectado, reintentando conexion en 5s");
+        setTimeout(function () {//Reintentar la conexion
+          sendString(Queues, sender, client, s, id);
+        }, 5000);
+      } else
+        console.log("MicroServicio desconectado.");
+    } else {
+      console.log('Recived Int:', data["response"]); // API response
+      if (Queues[id])//Si la cola no se ha eliminado continuar el ciclo
+        sendInt(Queues, client, sender, data["response"], id);
+    }
+  });
 }
 
 const microService = grpc.loadPackageDefinition(packageDefinition).MicroService;
