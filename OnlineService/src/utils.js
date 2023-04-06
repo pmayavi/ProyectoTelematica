@@ -86,7 +86,7 @@ export function caesarCrypt(unencoded) {//Encriptar el string
             newCharCode -= 24
         }
         let newChar;
-        if (str[i] === 't') {
+        if (newCharCode == 96) {
             result += 'h';
         } else {
             newChar = String.fromCharCode(newCharCode);
