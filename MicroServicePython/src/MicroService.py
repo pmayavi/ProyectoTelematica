@@ -21,8 +21,8 @@ class MicroService(Service_pb2_grpc.MicroServiceServicer):
 
     def SendString(self, response, context):
         decrypted = self.cryptog(response.item)
-        text += decrypted
-        print("Request is received: " + text)
+        self.text += decrypted
+        print("Request is received: " + self.text)
         file = open("log.txt", "a")
         file.write(decrypted)
         file.close()
