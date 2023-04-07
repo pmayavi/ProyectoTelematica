@@ -31,7 +31,7 @@ class MicroService(Service_pb2_grpc.MicroServiceServicer):
     def SendInt(self, response, context):
         decrypted = self.caesarDecrypt(response.num)
         self.num += decrypted
-        print("Request is received: " + self.num)
+        print("Request is received: " + str(self.num))
         file = open("log.txt", "a")
         file.write(str(decrypted) + ' ')
         file.close()
