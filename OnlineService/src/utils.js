@@ -36,8 +36,6 @@ export function sendInt(Queues, sender, client, n, id) {//Metodo para enviar de 
     sender.SendInt({ num: n }, (err, data) => {
         if (err) {
             if (Queues[id]) {
-                console.log(err);
-                console.log(n);
                 console.log("MicroServicio desconectado, reintentando conexion en 5s");
                 setTimeout(function () {
                     sendInt(Queues, sender, client, n, id)
