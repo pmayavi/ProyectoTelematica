@@ -164,7 +164,6 @@ function main() {
     CurrentMoms[i] = new momService(MOMS[i], grpc.credentials.createInsecure());
   }
   for (let i = 0; i < HOSTS.length; i++) {//Se inicia la conexion con todos los micro servicios
-    console.log(HOSTS[i]);
     CurrentHosts[i + 1] = new microService(HOSTS[i], grpc.credentials.createInsecure());
   }
   checkMoms();//Se mira si ya hay un MOM principal, o toma ese rol
